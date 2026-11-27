@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B.Tech Attendance & CGPA Calculator</title>
+  <style>
+    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+    body { background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: 600px; background: #1e293b; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+    h1 { margin: 0 0 6px; font-size: 1.6rem; color: #38bdf8; text-align: center; }
+    p.subtitle { margin: 0 0 20px; color: #94a3b8; font-size: 0.9rem; text-align: center; }
+    .tabs { display: flex; gap: 8px; background: #0f172a; padding: 6px; border-radius: 10px; margin-bottom: 20px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; background: transparent; color: #cbd5e1; font-weight: bold; cursor: pointer; }
+    .tab-btn.active { background: #2563eb; color: #fff; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+    label { display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 1rem; }
+    .result-box { padding: 18px; border-radius: 12px; text-align: center; margin-top: 12px; }
+    .safe { background: #064e3b; border: 1px solid #10b981; }
+    .danger { background: #7f1d1d; border: 1px solid #ef4444; }
+    .info { background: #1e3a8a; border: 1px solid #3b82f6; }
+    .big-num { font-size: 2rem; font-weight: bold; margin-bottom: 6px; }
+    .sem-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .sem-row span { width: 55px; font-weight: bold; color: #7dd3fc; }
+    .btn-small { padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: #fff; }
+    .btn-add { background: #334155; margin-top: 4px; }
+    .btn-del { background: #991b1b; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>B.Tech Academic Planner</h1>
+    <p class="subtitle">75% Attendance Bunk Calculator & Credit-Weighted CGPA Predictor</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('attendance')">Attendance Tracker</button>
+      <button class="tab-btn" onclick="switchTab('cgpa')">CGPA Predictor</button>
+    </div>
+
+    <!-- ATTENDANCE SECTION -->
+    <div id="attendance-section">
+      <div class="grid-3">
+        <div>
+          <label>Total Classes</label>
+          <input type="number" id="totalClasses" value="60" min="0" oninput="calcAttendance()" />
+        </div>
+        <div>
+          <label>Attended</label>
+          <input type="number" id="attendedClasses" value="48" min="0" oninput="calcAttendance()" />
+        </div>
+        <div>
+          <label>Target %</label>
+          <input type="number" id="targetPercent" value="75" min="1" max="99" oninput="calcAttendance()" />
+        </div>
+      </div>
+      <div id="attendance-result" class="result-box safe"></div>
+    </div>
+
+    <!-- CGPA SECTION -->
+    <div id="cgpa-section" class="hidden">
+      <div id="semesters-list"></div>
+      <button class="btn-small btn-add" onclick="addSemester()">+ Add Semester</button>
+
+      <div class="grid-2">
+        <div>
+          <label>Target CGPA (out of 10)</label>
+          <input type="number" id="targetCgpa" value="8.5" step="0.01" min="0" max="10" oninput="calcCgpa()" />
+        </div>
+        <div>
+          <label>Remaining Credits</label>
+          <input type="number" id="remainingCredits" value="120" min="0" oninput="calcCgpa()" />
+        </div>
+      </div>
+      <div id="cgpa-result" class="result-box info"></div>
+    </div>
+  </div>
+
+  <script>
+    let semesters = [
+      { sgpa: 8.2, credits: 20 },
+      { sgpa: 8.5, credits: 20 }
+    ];
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', (tab === 'attendance' && idx === 0) || (tab === 'cgpa' && idx === 1));
+      });
+      document.getElementById('attendance-section').classList.toggle('hidden', tab !== 'attendance');
+      document.getElementById('cgpa-section').classList.toggle('hidden', tab !== 'cgpa');
+    }
+
+    function calcAttendance() {
+      const total = Number(document.getElementById('totalClasses').value);
+      const attended = Number(document.getElementById('attendedClasses').value);
+      const target = Number(document.getElementById('targetPercent').value);
+      const box = document.getElementById('attendance-result');
+
+      if (attended > total) {
+        box.className = 'result-box danger';
+        box.innerHTML = 'Attended classes cannot exceed total classes held.';
+        return;
+      }
+      if (total <= 0) {
+        box.className = 'result-box info';
+        box.innerHTML = 'Enter total classes to calculate.';
+        return;
+      }
+
+      const pct = ((attended / total) * 100).toFixed(2);
+      const ratio = target / 100;
+
+      if (attended / total >= ratio) {
+        const canSkip = Math.floor((attended - ratio * total) / ratio);
+        box.className = 'result-box safe';
+        box.innerHTML = '<div class="big-num">' + pct + '%</div>Safe Zone! You can bunk <b>' + canSkip + '</b> class(es) and stay above ' + target + '%.';
+      } else {
+        const mustAttend = Math.ceil((ratio * total - attended) / (1 - ratio));
+        box.className = 'result-box danger';
+        box.innerHTML = '<div class="big-num">' + pct + '%</div>Shortage! Attend the next <b>' + mustAttend + '</b> class(es) straight to reach ' + target + '%.';
+      }
+    }
+
+    function renderSemesters() {
+      const container = document.getElementById('semesters-list');
+      container.innerHTML = '';
+      semesters.forEach((sem, i) => {
+        const row = document.createElement('div');
+        row.className = 'sem-row';
+        row.innerHTML =
+          '<span>Sem ' + (i + 1) + '</span>' +
+          '<input type="number" step="0.01" min="0" max="10" placeholder="SGPA" value="' + sem.sgpa + '" oninput="updateSem(' + i + ', \'sgpa\', this.value)" />' +
+          '<input type="number" min="1" max="40" placeholder="Credits" value="' + sem.credits + '" oninput="updateSem(' + i + ', \'credits\', this.value)" />' +
+          (semesters.length > 1 ? '<button class="btn-small btn-del" onclick="removeSem(' + i + ')">X</button>' : '');
+        container.appendChild(row);
+      });
+      calcCgpa();
+    }
+
+    function updateSem(index, field, val) {
+      semesters[index][field] = val;
+      calcCgpa();
+    }
+
+    function addSemester() {
+      if (semesters.length < 8) {
+        semesters.push({ sgpa: '', credits: 20 });
+        renderSemesters();
+      }
+    }
+
+    function removeSem(index) {
+      semesters.splice(index, 1);
+      renderSemesters();
+    }
+
+    function calcCgpa() {
+      let points = 0, doneCredits = 0;
+      semesters.forEach(s => {
+        const g = parseFloat(s.sgpa), c = parseFloat(s.credits);
+        if (!isNaN(g) && !isNaN(c) && c > 0) { points += g * c; doneCredits += c; }
+      });
+
+      const currentCgpa = doneCredits > 0 ? (points / doneCredits).toFixed(2) : '0.00';
+      const targetCgpa = parseFloat(document.getElementById('targetCgpa').value) || 0;
+      const remCredits = parseFloat(document.getElementById('remainingCredits').value) || 0;
+      const box = document.getElementById('cgpa-result');
+
+      let msg = '<div style="font-size:0.85rem;color:#bfdbfe">Current CGPA (' + doneCredits + ' credits)</div><div class="big-num">' + currentCgpa + '</div>';
+      if (remCredits > 0) {
+        const req = (((targetCgpa * (doneCredits + remCredits)) - points) / remCredits).toFixed(2);
+        if (req > 10) msg += 'Required SGPA is <b>' + req + '</b> — impossible (max is 10.0). Lower your target.';
+        else if (req <= 0) msg += 'You have already secured your ' + targetCgpa + ' CGPA target!';
+        else msg += 'You need an average SGPA of <b>' + req + '</b> in your remaining ' + remCredits + ' credits.';
+      }
+      box.innerHTML = msg;
+    }
+
+    calcAttendance();
+    renderSemesters();
+  </script>
+</body>
+</html>
