@@ -2,7 +2,7 @@
 
 A responsive **Progressive Web App (PWA)** built specifically for B.Tech students to track their 75% attendance requirement and predict the SGPA needed in upcoming semesters to hit their target CGPA.
 
-🔗 **Live Demo & Installable App:** [https://github.io](https://github.io)
+🔗 **Live Demo & Installable App:** https://nishantmummithi.github.io/B.Tech-CGPA-and-Student-Attendance-Calculator/
 
 ---
 
